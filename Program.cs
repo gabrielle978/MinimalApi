@@ -6,6 +6,10 @@ using minimal_api.Domínio.Serviços;
 using Microsoft.AspNetCore.Mvc;
 using MinimalApi.Dominio.ModelViews;
 using MinimalApi.Dominio.Entidade;
+using Microsoft.VisualBasic;
+using MinimalApi.Dominio.Enuns;
+using MinimalApi.Domínio.ModelViews;
+using System.ComponentModel.DataAnnotations;
 
 #region Builder
 var builder = WebApplication.CreateBuilder(args);
@@ -40,7 +44,71 @@ app.MapPost("/administradores/login", ([FromBody] LoginDTO loginDTO, IAdministra
     else
         return Results.Unauthorized();
 }).WithTags("Administrador");
+
+app.MapGet("/administradores", ([FromQuery] int? pagina, IAdministradorServico administradorServico) =>
+{
+    var adms = new List<AdministradorModelView>();
+    var administradores = administradorServico.Todos(pagina);
+    foreach (var adm in administradores)    
+    {
+        adms.Add(new AdministradorModelView
+        {
+            Email = adm.Email,
+            Id = adm.Id,
+            Perfil = adm.Perfil
+        });
+    }
+
+    return Results.Ok(adms);
+
+}).WithTags("Administrador");
+
+app.MapGet("/Administradores/{id}", ([FromRoute] int id, IAdministradorServico administradorServico) =>
+{
+    var administrador = administradorServico.BuscaPorId(id);
+    if (administrador == null) return Results.NotFound();
+    return Results.Ok(new AdministradorModelView
+    {   Email = administrador.Email,
+        Id = administrador.Id,
+        Perfil = administrador.Perfil
+    });
+}).WithTags("Administrador");
 //add rotas por contexto/tags no swagger
+
+app.MapPost("/administradores", ([FromBody] AdministradorDTO administradorDTO, IAdministradorServico administradorServico) =>
+{
+    var validacao = new ErrorMessage
+    {
+        Mensagens = new List<string>()
+    };
+
+    if (string.IsNullOrEmpty(administradorDTO.Email))
+        validacao.Mensagens.Add("O campo Email não pode ser vazio");
+    if (string.IsNullOrEmpty(administradorDTO.Senha))
+        validacao.Mensagens.Add("O campo Senha não pode ser vazio");
+    if (administradorDTO.Perfil == null)
+        validacao.Mensagens.Add("O campo Perfil não pode ser vazio");
+
+    if (validacao.Mensagens.Count > 0)
+        return Results.BadRequest(validacao);
+
+    var adm = new Administrador
+    {
+        Email = administradorDTO.Email,
+        Senha = administradorDTO.Senha,
+        Perfil = administradorDTO.Perfil.ToString() ?? Perfil.Editor.ToString()
+    };
+
+    administradorServico.Incluir(adm);
+
+    return Results.Created($"/administrador/{adm.Id}", new AdministradorModelView
+    {
+        Email = adm.Email,
+        Id = adm.Id,
+        Perfil = adm.Perfil
+    });
+
+}).WithTags("Administradores");
 
 #endregion
 
