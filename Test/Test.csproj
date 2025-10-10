@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <ShadowCopyReferences>false</ShadowCopyReferences>
+  </PropertyGroup>
+
+  <!-- referenciando o projeto principal -->
+  <ItemGroup>
+    <ProjectReference Include="..\API\minimal-api.csproj" />
+  </ItemGroup>
+
+  <!-- pacotes para MSTest e WebApplicationFactory -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0" />
+  </ItemGroup>
+
+  <!-- garantir que appsettings.json esteja acessível -->
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- 👇 Copiar corretamente o .deps.json da pasta "API", não "minimal-api" -->
+  <Target Name="CopyDepsFile" AfterTargets="Build">
+    <ItemGroup>
+      <DepsFile Include="..\API\bin\Debug\net9.0\*.deps.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DepsFile)" DestinationFolder="$(OutDir)" />
+  </Target>
+
+</Project>
